@@ -105,7 +105,6 @@ public abstract class QueriedTableRelation<TR extends AbstractTableRelation> imp
         return relationId;
     }
 
-    @Override
     public void relationId(byte relationId) {
         this.relationId = relationId;
     }

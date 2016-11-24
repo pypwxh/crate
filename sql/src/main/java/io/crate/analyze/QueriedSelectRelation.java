@@ -105,7 +105,6 @@ public class QueriedSelectRelation implements QueriedRelation {
         return relationId;
     }
 
-    @Override
     public void relationId(byte relationId) {
         this.relationId = relationId;
     }

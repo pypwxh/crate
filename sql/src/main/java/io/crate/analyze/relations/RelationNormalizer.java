@@ -202,7 +202,7 @@ final class RelationNormalizer {
             return Collections2.transform(fields, Field::path);
         }
 
-        private byte relationId() {
+        private byte nextRelationId() {
             if (relationCounter > MAX_RELATIONS) {
                 throw new UnsupportedFeatureException("Query with more than " + MAX_RELATIONS + " relations");
             }
@@ -400,21 +400,21 @@ final class RelationNormalizer {
 
         @Override
         public AnalyzedRelation visitQueriedSelectRelation(QueriedSelectRelation relation, Context context) {
-            setRelationId(relation, context);
+            relation.relationId(context.nextRelationId());
             relation.subRelation((QueriedRelation) process(relation.subRelation(), context));
             return relation;
         }
 
         @Override
         public AnalyzedRelation visitQueriedTable(QueriedTable table, Context context) {
-            setRelationId(table, context);
+            table.relationId(context.nextRelationId());
             table.normalize(context.functions, context.transactionContext);
             return table;
         }
 
         @Override
         public AnalyzedRelation visitQueriedDocTable(QueriedDocTable table, Context context) {
-            setRelationId(table, context);
+            table.relationId(context.nextRelationId());
             table.normalize(context.functions, context.transactionContext);
             table.analyzeWhereClause(context.functions, context.transactionContext);
             return table;
@@ -422,7 +422,7 @@ final class RelationNormalizer {
 
         @Override
         public AnalyzedRelation visitMultiSourceSelect(MultiSourceSelect multiSourceSelect, Context context) {
-            setRelationId(multiSourceSelect, context);
+            multiSourceSelect.relationId(context.nextRelationId());
             QuerySpec querySpec = multiSourceSelect.querySpec();
             querySpec.normalize(context.normalizer, context.transactionContext);
             // must create a new MultiSourceSelect because paths and query spec changed
@@ -431,10 +431,6 @@ final class RelationNormalizer {
                 multiSourceSelect.joinPairs());
             multiSourceSelect.pushDownQuerySpecs();
             return multiSourceSelect;
-        }
-
-        private void setRelationId(QueriedRelation queriedRelation, Context context) {
-            queriedRelation.relationId(context.relationId());
         }
     }
 }

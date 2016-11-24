@@ -29,6 +29,4 @@ public interface QueriedRelation extends AnalyzedRelation {
 
     // relation Id used to distinguish between relations in the Fetch phase (union)
     byte relationId();
-
-    void relationId(byte relationId);
 }
