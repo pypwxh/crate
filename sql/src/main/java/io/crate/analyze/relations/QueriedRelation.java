@@ -26,4 +26,9 @@ import io.crate.analyze.QuerySpec;
 public interface QueriedRelation extends AnalyzedRelation {
 
     QuerySpec querySpec();
+
+    // relation Id used to distinguish between relations in the Fetch phase (union)
+    byte relationId();
+
+    void relationId(byte relationId);
 }

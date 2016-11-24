@@ -110,6 +110,16 @@ public class TwoTableJoin implements QueriedRelation {
         throw new UnsupportedOperationException("method not supported");
     }
 
+    @Override
+    public byte relationId() {
+        throw new UnsupportedOperationException("relationId() not supported");
+    }
+
+    @Override
+    public void relationId(byte relationId) {
+        throw new UnsupportedOperationException("relationId(byte relationId) not supported");
+    }
+
     public QualifiedName leftName() {
         return left.qualifiedName();
     }

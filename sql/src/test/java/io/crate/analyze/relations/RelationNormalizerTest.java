@@ -22,18 +22,24 @@
 
 package io.crate.analyze.relations;
 
-import io.crate.analyze.MultiSourceSelect;
-import io.crate.analyze.QueriedSelectRelation;
-import io.crate.analyze.RelationSource;
-import io.crate.analyze.SelectAnalyzedStatement;
+import io.crate.action.sql.SessionContext;
+import io.crate.analyze.*;
+import io.crate.exceptions.UnsupportedFeatureException;
+import io.crate.metadata.TransactionContext;
 import io.crate.test.integration.CrateUnitTest;
 import io.crate.testing.SQLExecutor;
 import io.crate.testing.T3;
+import io.crate.testing.TestingHelpers;
 import org.elasticsearch.test.cluster.NoopClusterService;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
+import java.util.ArrayList;
 
 import static io.crate.testing.TestingHelpers.isSQL;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.mockito.Mockito.*;
 
 public class RelationNormalizerTest extends CrateUnitTest {
 
@@ -365,5 +371,32 @@ public class RelationNormalizerTest extends CrateUnitTest {
         assertThat(relation, instanceOf(MultiSourceSelect.class));
         assertThat(relation.querySpec(), isSQL(
             "SELECT doc.t1.a, doc.t2.i ORDER BY doc.t2.y LIMIT least(5, 10) OFFSET add(5, 2)"));
+    }
+
+    @Test
+    public void testMaxNumberOfRelations() throws Exception {
+        QueriedSelectRelation relation = mock(QueriedSelectRelation.class);
+        doAnswer(new Answer() {
+            private short count = 0;
+            public Object answer(InvocationOnMock invocation) {
+                if (count++ == 0) { // First call in SubSelectRewriter
+                    return mock(QueriedDocTable.class);
+                }
+                if (count++ <= 2*RelationNormalizer.MAX_RELATIONS + 2) {
+                    return relation;
+                }
+                return mock(QueriedDocTable.class);
+            }
+        }).when(relation).subRelation();
+        when(relation.accept(any(AnalyzedRelationVisitor.class), any(Object.class)))
+            .thenAnswer(invocation -> ((AnalyzedRelationVisitor) invocation.getArguments()[0])
+                .visitQueriedSelectRelation(relation, invocation.getArguments()[1]));
+        QuerySpec querySpec = new QuerySpec();
+        querySpec.outputs(new ArrayList<>());
+        when(relation.querySpec()).thenReturn(querySpec);
+
+        expectedException.expect(UnsupportedFeatureException.class);
+        expectedException.expectMessage("Query with more than " + RelationNormalizer.MAX_RELATIONS + " relations");
+        RelationNormalizer.normalize(relation, TestingHelpers.getFunctions(), new TransactionContext(SessionContext.SYSTEM_SESSION));
     }
 }

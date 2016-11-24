@@ -42,6 +42,7 @@ public class QueriedSelectRelation implements QueriedRelation {
     private final Fields fields;
     private QueriedRelation subRelation;
     private QuerySpec querySpec;
+    private byte relationId = 0;
 
     public QueriedSelectRelation(QueriedRelation subRelation, Collection<? extends Path> outputNames, QuerySpec querySpec) {
         this.subRelation = subRelation;
@@ -97,5 +98,15 @@ public class QueriedSelectRelation implements QueriedRelation {
     @Override
     public void setQualifiedName(@Nonnull QualifiedName qualifiedName) {
         subRelation.setQualifiedName(qualifiedName);
+    }
+
+    @Override
+    public byte relationId() {
+        return relationId;
+    }
+
+    @Override
+    public void relationId(byte relationId) {
+        this.relationId = relationId;
     }
 }

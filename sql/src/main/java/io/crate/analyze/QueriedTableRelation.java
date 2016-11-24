@@ -40,6 +40,7 @@ public abstract class QueriedTableRelation<TR extends AbstractTableRelation> imp
     protected final TR tableRelation;
     private final QuerySpec querySpec;
     private final Fields fields;
+    private byte relationId;
 
     public QueriedTableRelation(TR tableRelation, Collection<? extends Path> outputNames, QuerySpec querySpec) {
         this.tableRelation = tableRelation;
@@ -97,5 +98,15 @@ public abstract class QueriedTableRelation<TR extends AbstractTableRelation> imp
     @Override
     public void setQualifiedName(@Nonnull QualifiedName qualifiedName) {
         tableRelation.setQualifiedName(qualifiedName);
+    }
+
+    @Override
+    public byte relationId() {
+        return relationId;
+    }
+
+    @Override
+    public void relationId(byte relationId) {
+        this.relationId = relationId;
     }
 }

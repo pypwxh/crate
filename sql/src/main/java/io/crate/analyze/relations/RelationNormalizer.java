@@ -31,6 +31,7 @@ import io.crate.analyze.symbol.Aggregations;
 import io.crate.analyze.symbol.Field;
 import io.crate.analyze.symbol.Symbol;
 import io.crate.analyze.symbol.SymbolVisitor;
+import io.crate.exceptions.UnsupportedFeatureException;
 import io.crate.metadata.*;
 import io.crate.operation.operator.AndOperator;
 import io.crate.planner.Limits;
@@ -48,6 +49,8 @@ import java.util.Map;
  */
 final class RelationNormalizer {
 
+    public static final short MAX_RELATIONS = 256;
+
     private RelationNormalizer() {
     }
 
@@ -55,7 +58,8 @@ final class RelationNormalizer {
                                              Functions functions,
                                              TransactionContext transactionContext) {
         Context context = new Context(functions, relation.fields(), transactionContext);
-        return NormalizerVisitor.normalize(SubselectRewriter.rewrite(relation, context), context);
+        AnalyzedRelation rel = SubselectRewriter.rewrite(relation, context);
+        return NormalizerVisitor.normalize(rel, context);
     }
 
     private static Map<QualifiedName, AnalyzedRelation> mapSourceRelations(MultiSourceSelect multiSourceSelect) {
@@ -181,10 +185,11 @@ final class RelationNormalizer {
         private final TransactionContext transactionContext;
         private final EvaluatingNormalizer normalizer;
         private final Functions functions;
+        private short relationCounter = 0;
 
         private QuerySpec currentParentQSpec;
 
-        public Context(Functions functions,
+        private Context(Functions functions,
                        List<Field> fields,
                        TransactionContext transactionContext) {
             this.functions = functions;
@@ -193,8 +198,15 @@ final class RelationNormalizer {
             this.transactionContext = transactionContext;
         }
 
-        public Collection<? extends Path> paths() {
+        private Collection<? extends Path> paths() {
             return Collections2.transform(fields, Field::path);
+        }
+
+        private byte relationId() {
+            if (relationCounter > MAX_RELATIONS) {
+                throw new UnsupportedFeatureException("Query with more than " + MAX_RELATIONS + " relations");
+            }
+            return (byte) relationCounter++;
         }
     }
 
@@ -388,18 +400,21 @@ final class RelationNormalizer {
 
         @Override
         public AnalyzedRelation visitQueriedSelectRelation(QueriedSelectRelation relation, Context context) {
+            setRelationId(relation, context);
             relation.subRelation((QueriedRelation) process(relation.subRelation(), context));
             return relation;
         }
 
         @Override
         public AnalyzedRelation visitQueriedTable(QueriedTable table, Context context) {
+            setRelationId(table, context);
             table.normalize(context.functions, context.transactionContext);
             return table;
         }
 
         @Override
         public AnalyzedRelation visitQueriedDocTable(QueriedDocTable table, Context context) {
+            setRelationId(table, context);
             table.normalize(context.functions, context.transactionContext);
             table.analyzeWhereClause(context.functions, context.transactionContext);
             return table;
@@ -407,6 +422,7 @@ final class RelationNormalizer {
 
         @Override
         public AnalyzedRelation visitMultiSourceSelect(MultiSourceSelect multiSourceSelect, Context context) {
+            setRelationId(multiSourceSelect, context);
             QuerySpec querySpec = multiSourceSelect.querySpec();
             querySpec.normalize(context.normalizer, context.transactionContext);
             // must create a new MultiSourceSelect because paths and query spec changed
@@ -415,6 +431,10 @@ final class RelationNormalizer {
                 multiSourceSelect.joinPairs());
             multiSourceSelect.pushDownQuerySpecs();
             return multiSourceSelect;
+        }
+
+        private void setRelationId(QueriedRelation queriedRelation, Context context) {
+            queriedRelation.relationId(context.relationId());
         }
     }
 }

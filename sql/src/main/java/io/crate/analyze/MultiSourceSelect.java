@@ -42,6 +42,7 @@ public class MultiSourceSelect implements QueriedRelation {
     private final List<JoinPair> joinPairs;
     private final List<Symbol> outputSymbols;
     private QualifiedName qualifiedName;
+    private byte relationId = 0;
 
     public MultiSourceSelect(Map<QualifiedName, AnalyzedRelation> sources,
                              List<Symbol> outputSymbols,
@@ -109,6 +110,16 @@ public class MultiSourceSelect implements QueriedRelation {
     @Override
     public QuerySpec querySpec() {
         return querySpec;
+    }
+
+    @Override
+    public byte relationId() {
+        return relationId;
+    }
+
+    @Override
+    public void relationId(byte relationId) {
+        this.relationId = relationId;
     }
 
     private static HashMap<QualifiedName, RelationSource> initializeSources(Map<QualifiedName, AnalyzedRelation> originalSources) {
