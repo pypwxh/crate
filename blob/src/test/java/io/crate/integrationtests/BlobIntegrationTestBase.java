@@ -23,6 +23,8 @@
 package io.crate.integrationtests;
 
 import com.google.common.base.Throwables;
+import io.crate.blob.BlobTransferStatus;
+import io.crate.blob.BlobTransferTarget;
 import io.crate.blob.v2.BlobIndicesService;
 import io.crate.plugin.BlobPlugin;
 import io.crate.rest.CrateRestFilter;
@@ -30,12 +32,14 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.test.ESIntegTestCase;
-import org.hamcrest.Matchers;
 import org.junit.After;
 
 import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Map;
+import java.util.UUID;
+
+import static org.hamcrest.Matchers.empty;
 
 public abstract class BlobIntegrationTestBase extends ESIntegTestCase {
 
@@ -65,7 +69,7 @@ public abstract class BlobIntegrationTestBase extends ESIntegTestCase {
                 Map<String, Object> indices = null;
                 try {
                     indices = (Map<String, Object>) indicesField.get(blobIndicesService);
-                    assertThat(indices.keySet(), Matchers.empty());
+                    assertThat(indices.keySet(), empty());
                 } catch (IllegalAccessException e) {
                     throw Throwables.propagate(e);
                 }

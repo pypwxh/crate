@@ -26,5 +26,6 @@ if (project.hasProperty('testLogging')) {
 
 forbiddenApisMain {
     bundledSignatures = ['jdk-unsafe', 'jdk-deprecated']
+    signaturesFiles = files('../gradle/forbidden-signatures.txt')
     ignoreFailures = false
 }
